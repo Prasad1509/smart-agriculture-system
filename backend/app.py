@@ -3,20 +3,19 @@ from flask_cors import CORS
 import pickle
 import os
 
-# 🔗 Import DB
+# ✅ Correct imports
+from routes.prediction_routes import prediction_bp
+from routes.auth_routes import auth_bp
 from utils.db import get_db_connection
 
-# 🔗 Import routes
-from routes.auth_routes import auth_bp
-
-# ✅ App init
 app = Flask(__name__)
 CORS(app)
 
-# ✅ Register blueprint
+# ✅ Register routes
 app.register_blueprint(auth_bp)
+app.register_blueprint(prediction_bp)
 
-# ✅ Load ML model (safe path)
+# ✅ Load ML model
 MODEL_PATH = os.path.join(
     os.path.dirname(__file__),
     '../ml_model/saved_model/crop_model.pkl'
@@ -24,12 +23,12 @@ MODEL_PATH = os.path.join(
 
 model = pickle.load(open(MODEL_PATH, 'rb'))
 
-# ✅ Home route
+# ✅ Home
 @app.route('/')
 def home():
     return "Backend Running 🚀"
 
-# ✅ Test DB connection
+# ✅ Test DB
 @app.route('/test-db')
 def test_db():
     try:
@@ -39,7 +38,7 @@ def test_db():
     except Exception as e:
         return f"DB Error: {str(e)}"
 
-# ✅ Prediction API
+# ✅ ML Prediction
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
