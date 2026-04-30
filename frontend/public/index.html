@@ -1,23 +1,57 @@
-<form>
-  Temperature: <input id="temp"><br>
-  Humidity: <input id="hum"><br>
-  Rainfall: <input id="rain"><br>
-  <button type="button" onclick="predict()">Predict</button>
-</form>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Agriculture</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>🌾 Smart Agriculture System</h1>
+
+    <h2>Crop Prediction</h2>
+
+    <input id="temp" placeholder="Temperature">
+    <input id="hum" placeholder="Humidity">
+    <input id="rain" placeholder="Rainfall">
+
+    <button onclick="predict()">Predict</button>
+    <button onclick="loadHistory()">Show History</button>
+
+    <h3 id="output"></h3>
+    <div id="history"></div>
+</div>
 
 <script>
 function predict() {
-  fetch("http://127.0.0.1:5000/predict-db", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      user_id: 1,
-      temperature: document.getElementById("temp").value,
-      humidity: document.getElementById("hum").value,
-      rainfall: document.getElementById("rain").value
+    fetch("http://127.0.0.1:5000/predict-db", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            user_id: 1,
+            temperature: Number(document.getElementById("temp").value),
+            humidity: Number(document.getElementById("hum").value),
+            rainfall: Number(document.getElementById("rain").value)
+        })
     })
-  })
-  .then(res => res.json())
-  .then(data => alert("Crop: " + data.predicted_crop));
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("output").innerText = "Crop: " + data.predicted_crop;
+    });
+}
+
+function loadHistory() {
+    fetch("http://127.0.0.1:5000/predictions/1")
+    .then(res => res.json())
+    .then(data => {
+        let html = "<h3>History</h3>";
+        data.forEach(d => {
+            html += `<p>${d.temperature} | ${d.humidity} | ${d.rainfall} → ${d.predicted_crop}</p>`;
+        });
+        document.getElementById("history").innerHTML = html;
+    });
 }
 </script>
+
+</body>
+</html>

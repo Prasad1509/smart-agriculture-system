@@ -3,19 +3,23 @@ from flask_cors import CORS
 import pickle
 import os
 
-# ✅ Correct imports
+# ✅ Import routes
 from routes.prediction_routes import prediction_bp
 from routes.auth_routes import auth_bp
 from utils.db import get_db_connection
 
+# ✅ App init
 app = Flask(__name__)
 CORS(app)
+app.secret_key = "secret123"   # 🔐 session ke liye required
 
-# ✅ Register routes
+# ✅ Register Blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(prediction_bp)
 
-# ✅ Load ML model
+# =====================================================
+# 🔹 Load ML model (ONLY ONCE)
+# =====================================================
 MODEL_PATH = os.path.join(
     os.path.dirname(__file__),
     '../ml_model/saved_model/crop_model.pkl'
@@ -23,12 +27,16 @@ MODEL_PATH = os.path.join(
 
 model = pickle.load(open(MODEL_PATH, 'rb'))
 
-# ✅ Home
+# =====================================================
+# 🔹 Home Route
+# =====================================================
 @app.route('/')
 def home():
     return "Backend Running 🚀"
 
-# ✅ Test DB
+# =====================================================
+# 🔹 Test DB Connection
+# =====================================================
 @app.route('/test-db')
 def test_db():
     try:
@@ -38,25 +46,35 @@ def test_db():
     except Exception as e:
         return f"DB Error: {str(e)}"
 
-# ✅ ML Prediction
+# =====================================================
+# 🔹 ML Prediction API
+# =====================================================
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        data = request.json
+        data = request.get_json()
 
-        temp = float(data['temperature'])
-        hum = float(data['humidity'])
-        rain = float(data['rainfall'])
+        if not data:
+            return jsonify({"error": "No JSON received"}), 400
 
-        result = model.predict([[temp, hum, rain]])
+        # ✅ Correct variables
+        temperature = float(data['temperature'])
+        humidity = float(data['humidity'])
+        rainfall = float(data['rainfall'])
+
+        # ✅ Use already loaded model
+        result = model.predict([[temperature, humidity, rainfall]])
+        crop = result[0]
 
         return jsonify({
-            "prediction": result[0]
+            "prediction": crop
         })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Run server
+# =====================================================
+# 🔹 Run server
+# =====================================================
 if __name__ == '__main__':
     app.run(debug=True)

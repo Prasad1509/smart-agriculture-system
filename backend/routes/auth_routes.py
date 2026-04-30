@@ -1,50 +1,74 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from utils.db import get_db_connection
+from werkzeug.security import generate_password_hash, check_password_hash
 
 auth_bp = Blueprint('auth', __name__)
 
-# Register
+# =====================================================
+# 🔹 REGISTER API
+# =====================================================
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    data = request.json
-    name = data['name']
-    email = data['email']
-    password = data['password']
+    try:
+        data = request.get_json()
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
+        name = data['name']
+        email = data['email']
+        password = data['password']
 
-    cursor.execute(
-        "INSERT INTO users (name, email, password) VALUES (%s, %s, %s)",
-        (name, email, password)
-    )
-    conn.commit()
+        # 🔐 Hash password
+        hashed_password = generate_password_hash(password)
 
-    cursor.close()
-    conn.close()
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-    return jsonify({"message": "User registered successfully"})
+        cursor.execute("""
+            INSERT INTO users (name, email, password)
+            VALUES (%s, %s, %s)
+        """, (name, email, hashed_password))
 
-# Login
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({"message": "User registered successfully"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# =====================================================
+# 🔹 LOGIN API
+# =====================================================
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    data = request.json
-    email = data['email']
-    password = data['password']
+    try:
+        data = request.get_json()
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
+        email = data['email']
+        password = data['password']
 
-    cursor.execute(
-        "SELECT * FROM users WHERE email=%s AND password=%s",
-        (email, password)
-    )
-    user = cursor.fetchone()
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-    cursor.close()
-    conn.close()
+        # ❌ direct password check remove
+        cursor.execute("SELECT * FROM users WHERE email=%s", (email,))
+        user = cursor.fetchone()
 
-    if user:
-        return jsonify({"message": "Login successful", "user_id": user[0]})
-    else:
-        return jsonify({"message": "Invalid credentials"}), 401
+        cursor.close()
+        conn.close()
+
+        # ✅ Check hashed password
+        if user and check_password_hash(user[3], password):
+            session['user_id'] = user[0]   # 🔐 session save
+
+            return jsonify({
+                "message": "Login successful",
+                "user_id": user[0]
+            })
+        else:
+            return jsonify({"message": "Invalid credentials"}), 401
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
