@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import "./App.css";
-import Login from "./pages/Login";  // ✅ correct path
+import Login from "./pages/Login";
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    localStorage.getItem("user_id") ? true : false
-  );
+  // 🔥 FORCE LOGIN FIRST TIME (ignore localStorage)
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   return (
     <div>
@@ -29,7 +28,7 @@ function Dashboard() {
   const [historyData, setHistoryData] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const user_id = localStorage.getItem("user_id");
+  const user_id = localStorage.getItem("user_id") || 1;
 
   const predict = async () => {
     if (!temperature || !humidity || !rainfall) {
