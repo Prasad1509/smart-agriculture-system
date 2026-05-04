@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./Login.css";
 
-function Login() {
+function Login({ onLogin }) {   // ✅ receive prop
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -29,11 +29,11 @@ function Login() {
       if (res.status === 200) {
         setMessage("✅ Login Successful");
 
-        // Save user_id (important)
+        // ✅ Save user_id
         localStorage.setItem("user_id", data.user_id);
 
-        // Redirect (optional)
-        window.location.href = "/";
+        // ✅ VERY IMPORTANT (tell App login done)
+        onLogin();   // 🔥 THIS WAS MISSING
       } else {
         setMessage("❌ " + data.message);
       }

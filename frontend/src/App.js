@@ -3,153 +3,73 @@ import "./App.css";
 import Login from "./pages/Login";
 
 function App() {
-  // 🔥 FORCE LOGIN FIRST TIME (ignore localStorage)
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // 🔥 force login
 
   return (
     <div>
-      {isLoggedIn ? (
-        <Dashboard />
-      ) : (
+      {!isLoggedIn ? (
         <Login onLogin={() => setIsLoggedIn(true)} />
+      ) : (
+        <h2>✅ Dashboard</h2>
       )}
     </div>
   );
 }
 
-// =====================================================
-// 🔹 DASHBOARD COMPONENT
-// =====================================================
+// ================= DASHBOARD =================
 function Dashboard() {
   const [temperature, setTemperature] = useState("");
   const [humidity, setHumidity] = useState("");
   const [rainfall, setRainfall] = useState("");
   const [output, setOutput] = useState("");
   const [historyData, setHistoryData] = useState([]);
-  const [loading, setLoading] = useState(false);
 
   const user_id = localStorage.getItem("user_id") || 1;
 
   const predict = async () => {
-    if (!temperature || !humidity || !rainfall) {
-      setOutput("⚠️ Please fill all fields");
-      return;
-    }
+    const res = await fetch("http://127.0.0.1:5000/predict-db", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        user_id,
+        temperature,
+        humidity,
+        rainfall
+      })
+    });
 
-    try {
-      setLoading(true);
-
-      const res = await fetch("http://127.0.0.1:5000/predict-db", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id: user_id,
-          temperature: Number(temperature),
-          humidity: Number(humidity),
-          rainfall: Number(rainfall),
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.predicted_crop) {
-        setOutput("🌾 Predicted Crop: " + data.predicted_crop);
-      } else {
-        setOutput("❌ Error: " + (data.error || "Something went wrong"));
-      }
-    } catch (error) {
-      setOutput("❌ Server error");
-    } finally {
-      setLoading(false);
-    }
+    const data = await res.json();
+    setOutput("🌾 " + data.predicted_crop);
   };
 
   const loadHistory = async () => {
-    try {
-      const res = await fetch(
-        `http://127.0.0.1:5000/predictions/${user_id}`
-      );
-      const data = await res.json();
-
-      if (Array.isArray(data)) {
-        setHistoryData(data);
-      }
-    } catch (error) {
-      setOutput("❌ Error loading history");
-    }
-  };
-
-  const logout = () => {
-    localStorage.removeItem("user_id");
-    window.location.reload();
+    const res = await fetch(
+      `http://127.0.0.1:5000/predictions/${user_id}`
+    );
+    const data = await res.json();
+    setHistoryData(data);
   };
 
   return (
-    <div className="App">
-      <h1>🌾 Smart Agriculture System</h1>
+    <div>
+      <h1>🌾 Smart Agriculture</h1>
 
-      <button onClick={logout}>Logout</button>
+      <input placeholder="Temp" onChange={(e) => setTemperature(e.target.value)} />
+      <input placeholder="Humidity" onChange={(e) => setHumidity(e.target.value)} />
+      <input placeholder="Rainfall" onChange={(e) => setRainfall(e.target.value)} />
 
-      <div className="card">
-        <h2>Crop Prediction</h2>
+      <button onClick={predict}>Predict</button>
+      <button onClick={loadHistory}>History</button>
 
-        <input
-          placeholder="Temperature"
-          value={temperature}
-          onChange={(e) => setTemperature(e.target.value)}
-        />
+      <h3>{output}</h3>
 
-        <input
-          placeholder="Humidity"
-          value={humidity}
-          onChange={(e) => setHumidity(e.target.value)}
-        />
-
-        <input
-          placeholder="Rainfall"
-          value={rainfall}
-          onChange={(e) => setRainfall(e.target.value)}
-        />
-
-        <button onClick={predict}>
-          {loading ? "Predicting..." : "Predict"}
-        </button>
-
-        <button onClick={loadHistory}>Show History</button>
-
-        <h3>{output}</h3>
-      </div>
-
-      <div className="card">
-        <h2>Prediction History</h2>
-
-        {historyData.length === 0 ? (
-          <p>No data available</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Temp</th>
-                <th>Humidity</th>
-                <th>Rainfall</th>
-                <th>Crop</th>
-              </tr>
-            </thead>
-            <tbody>
-              {historyData.map((item, index) => (
-                <tr key={index}>
-                  <td>{item.temperature}</td>
-                  <td>{item.humidity}</td>
-                  <td>{item.rainfall}</td>
-                  <td>{item.predicted_crop}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {historyData.map((item, i) => (
+        <p key={i}>
+          {item.temperature} | {item.humidity} | {item.rainfall} → {item.predicted_crop}
+        </p>
+      ))}
     </div>
   );
 }
