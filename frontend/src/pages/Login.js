@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import "./Login.css";
 
-function Login({ onLogin }) {   // ✅ receive prop
+function Login({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
   const handleLogin = async () => {
+    console.log("Button clicked"); // ✅ DEBUG
+
     if (!email || !password) {
       setMessage("⚠️ Please fill all fields");
       return;
@@ -26,19 +28,22 @@ function Login({ onLogin }) {   // ✅ receive prop
 
       const data = await res.json();
 
+      console.log("Response:", data); // ✅ DEBUG
+
       if (res.status === 200) {
         setMessage("✅ Login Successful");
 
-        // ✅ Save user_id
         localStorage.setItem("user_id", data.user_id);
 
-        // ✅ VERY IMPORTANT (tell App login done)
-        onLogin();   // 🔥 THIS WAS MISSING
+        // 🔥 THIS IS MOST IMPORTANT
+        onLogin();
+
       } else {
         setMessage("❌ " + data.message);
       }
 
     } catch (error) {
+      console.log(error);
       setMessage("❌ Server Error");
     }
   };
@@ -61,7 +66,10 @@ function Login({ onLogin }) {   // ✅ receive prop
         onChange={(e) => setPassword(e.target.value)}
       />
 
-      <button onClick={handleLogin}>Login</button>
+      {/* ✅ FIXED BUTTON */}
+      <button onClick={handleLogin}>
+        Login
+      </button>
 
       <p>{message}</p>
     </div>
